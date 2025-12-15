@@ -1,5 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { Server as IOServer } from 'socket.io'
+export const runtime = 'nodejs'
+
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { Server } from 'socket.io'
 import { prisma } from '@/lib/prisma'
 import cookie from 'cookie'
 import jwt from 'jsonwebtoken'
@@ -13,7 +15,7 @@ export const config = {
 
 const ioHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (!(res.socket as any).server.io) {
-    const io = new IOServer((res.socket as any).server, {
+    const io = new Server((res.socket as any).server, {
       path: '/api/socket.io',
     })
     ;(res.socket as any).server.io = io

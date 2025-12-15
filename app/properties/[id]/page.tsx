@@ -138,17 +138,25 @@ export default function PropertyDetailPage() {
 
   useEffect(() => {
     if (!conversationId) return
-    const io = require('socket.io-client')
-    const s = io('/', { path: '/api/socket.io' })
-    setSocket(s)
-    s.emit('join_conversation', { conversationId })
-    s.on('new_message', (msg: any) => {
-      if (msg.conversationId === conversationId) {
-        setMessages((prev) => [...prev, msg])
-      }
+
+    let s: any
+    let isMounted = true
+
+    import('socket.io-client').then(({ io }) => {
+      if (!isMounted) return
+      s = io('/', { path: '/api/socket.io' })
+      setSocket(s)
+      s.emit('join_conversation', { conversationId })
+      s.on('new_message', (msg: any) => {
+        if (msg.conversationId === conversationId) {
+          setMessages((prev) => [...prev, msg])
+        }
+      })
     })
+
     return () => {
-      s.disconnect()
+      isMounted = false
+      if (s) s.disconnect()
     }
   }, [conversationId])
 

@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  COMMISSIONER
+  ADMIN
+}
+
+enum PropertyType {
+  HOUSE
+  PLOT
+  APARTMENT
+  COMMERCIAL
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  UNDER_NEGOTIATION
+  SOLD
+  RENTED
+}
+
+enum AvailabilityType {
+  SALE
+  RENT
+  LEASE
+}
+
+enum LeadStatus {
+  PENDING
+  CONTACTED
+  VIEWING_SCHEDULED
+  CLOSED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  phone         String?
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  properties    Property[]
+  leads         Lead[]
+  appointments  Appointment[]
+  messages      Message[]
+  notifications Notification[]
+  userConversations          Conversation[] @relation("UserConversations")
+  commissionerConversations  Conversation[] @relation("CommissionerConversations")
+
+  @@map("users")
+}
+
+model Property {
+  id              String          @id @default(cuid())
+  commissionerId String
+  type            PropertyType
+  title           String
+  description     String?        @db.Text
+  price           Float
+  sizeSqm         Float
+  rooms           Int?
+  bathrooms       Int?
+  parkingSlots    Int?
+  yearBuilt       Int?
+  province        String
+  district        String
+  sector          String
+  cell            String?
+  status          PropertyStatus @default(AVAILABLE)
+  availability    AvailabilityType
+  mapUrl          String?
+  whatsappPrefill String?        @db.Text
+  amenities       Json           // Array of strings: ["parking", "water", "electricity", etc.]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  commissioner    User            @relation(fields: [commissionerId], references: [id], onDelete: Cascade)
+  media           PropertyMedia[]
+  analytics       PropertyAnalytics[]
+  leads           Lead[]
+  appointments    Appointment[]
+  messages        Message[]
+
+  @@index([commissionerId])
+  @@index([type])
+  @@index([status])
+  @@index([availability])
+  @@index([province, district, sector])
+  @@map("properties")
+}
+
+model PropertyMedia {
+  id         String   @id @default(cuid())
+  propertyId String
+  url        String
+  alt        String?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@map("property_media")
+}
+
+model PropertyAnalytics {
+  id         String   @id @default(cuid())
+  propertyId String
+  date       DateTime @default(now())
+  views      Int      @default(0)
+  chats      Int      @default(0)
+  inquiries  Int      @default(0)
+
+  // Relations
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, date])
+  @@index([propertyId])
+  @@map("property_analytics")
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  propertyId  String
+  userId      String?
+  name        String
+  email       String?
+  phone       String
+  message     String?    @db.Text
+  channel     String     // "whatsapp", "chat", "inquiry", "appointment"
+  status      LeadStatus @default(PENDING)
+  notes       String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  property    Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([status])
+  @@map("leads")
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  propertyId  String
+  userId      String?
+  name        String
+  email       String?
+  phone       String
+  requestedAt DateTime
+  status      AppointmentStatus @default(PENDING)
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  property    Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  propertyId     String?
+  propertyName   String?
+  propertyImage  String?
+  propertyLink   String?
+  userId         String?
+  senderName     String
+  senderEmail    String?
+  senderPhone    String?
+  body           String   @db.Text
+  attachments    Json?    // Array of file URLs
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  readAt         DateTime?
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  property     Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId])
+  @@index([propertyId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "inquiry", "message", "appointment", "property_approved"
+  title     String
+  message   String   @db.Text
+  payload   Json?    // Additional data
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}
+
+model Conversation {
+  id                     String   @id @default(cuid())
+  userId                 String
+  commissionerId         String
+  lastMessageAt          DateTime @default(now())
+  unreadForCommissioner  Int      @default(0)
+  unreadForUser          Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  user          User    @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+  commissioner   User    @relation("CommissionerConversations", fields: [commissionerId], references: [id], onDelete: Cascade)
+  messages      Message[]
+
+  @@unique([userId, commissionerId])
+  @@index([commissionerId])
+  @@map("conversations")
+}
+
+// Update User relations to link conversations

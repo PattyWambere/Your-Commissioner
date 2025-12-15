@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -20,6 +20,7 @@
     "date-fns": "^3.0.6",
     "jsonwebtoken": "^9.0.2",
     "keen-slider": "^6.8.6",
+    "iconv-lite": "^0.6.3",
     "lucide-react": "^0.303.0",
     "next": "14.0.4",
     "nodemailer": "^6.9.7",

@@ -35,6 +35,7 @@ export default function PropertiesPage() {
 
   // Initialize filters/page from URL
   useEffect(() => {
+    if (!searchParams) return
     const paramsObj: any = {}
     searchParams.forEach((value, key) => {
       if (key === 'page') {

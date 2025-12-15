@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Home, ArrowLeft, Trash2, Plus } from 'lucide-react'
@@ -8,6 +8,10 @@ import toast from 'react-hot-toast'
 
 export default function EditPropertyPage() {
   const params = useParams()
+  const propertyId = useMemo(() => {
+    const id = params?.id
+    return Array.isArray(id) ? id[0] : id
+  }, [params])
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -76,12 +80,14 @@ export default function EditPropertyPage() {
   }
 
   useEffect(() => {
+    if (!propertyId) return
     fetchProperty()
-  }, [params.id])
+  }, [propertyId])
 
   const fetchProperty = async () => {
+    if (!propertyId) return
     try {
-      const response = await fetch(`/api/properties/${params.id}`)
+      const response = await fetch(`/api/properties/${propertyId}`)
       const data = await response.json()
       if (response.ok) {
         setProperty(data.property)
@@ -118,7 +124,7 @@ export default function EditPropertyPage() {
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/properties/${params.id}`, {
+      const response = await fetch(`/api/properties/${propertyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +159,7 @@ export default function EditPropertyPage() {
     if (!confirm('Are you sure you want to delete this property?')) return
 
     try {
-      const response = await fetch(`/api/properties/${params.id}`, {
+      const response = await fetch(`/api/properties/${propertyId}`, {
         method: 'DELETE',
       })
 
@@ -175,7 +181,7 @@ export default function EditPropertyPage() {
     }
 
     try {
-      const response = await fetch(`/api/properties/${params.id}/media`, {
+      const response = await fetch(`/api/properties/${propertyId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: mediaUrl }),
@@ -194,6 +200,10 @@ export default function EditPropertyPage() {
   }
 
   const handleFileUpload = async () => {
+    if (!propertyId) {
+      toast.error('Missing property id')
+      return
+    }
     if (!selectedFiles || selectedFiles.length === 0) {
       toast.error('Please choose one or more files')
       return
@@ -203,7 +213,7 @@ export default function EditPropertyPage() {
       for (const file of Array.from(selectedFiles)) {
         const formData = new FormData()
         formData.append('file', file)
-        const response = await fetch(`/api/properties/${params.id}/media`, {
+        const response = await fetch(`/api/properties/${propertyId}/media`, {
           method: 'POST',
           body: formData,
         })
@@ -233,10 +243,14 @@ export default function EditPropertyPage() {
       return
     }
 
+    if (!propertyId) {
+      toast.error('Missing property id')
+      return
+    }
     setBulkAdding(true)
     try {
       for (const url of urls) {
-        const response = await fetch(`/api/properties/${params.id}/media`, {
+        const response = await fetch(`/api/properties/${propertyId}/media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url }),

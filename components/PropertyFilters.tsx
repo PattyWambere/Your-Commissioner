@@ -29,7 +29,7 @@ export default function PropertyFilters({ onFilterChange, initialFilters }: Prop
   // Sync when initialFilters changes
   useEffect(() => {
     if (initialFilters) {
-      setFilters((f) => ({ ...f, ...initialFilters }))
+      setFilters((f: typeof filters) => ({ ...f, ...initialFilters }))
     }
   }, [initialFilters])
 

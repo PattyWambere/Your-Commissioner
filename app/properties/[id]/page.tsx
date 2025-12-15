@@ -42,6 +42,10 @@ interface Property {
 export default function PropertyDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const propertyId = useMemo(() => {
+    const id = params?.id
+    return Array.isArray(id) ? id[0] : id
+  }, [params])
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -104,8 +108,9 @@ export default function PropertyDetailPage() {
   )
 
   useEffect(() => {
+    if (!propertyId) return
     fetchProperty()
-  }, [params.id])
+  }, [propertyId])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -162,7 +167,7 @@ export default function PropertyDetailPage() {
 
   const fetchProperty = async () => {
     try {
-      const response = await fetch(`/api/properties/${params.id}`)
+      const response = await fetch(`/api/properties/${propertyId}`)
       const data = await response.json()
       if (response.ok) {
         setProperty(data.property)
@@ -182,7 +187,8 @@ export default function PropertyDetailPage() {
   }
 
   const handleDownloadBrochure = () => {
-    window.open(`/api/properties/${params.id}/brochure`, '_blank')
+    if (!propertyId) return
+    window.open(`/api/properties/${propertyId}/brochure`, '_blank')
   }
 
   const handleAppointmentSubmit = async (e: React.FormEvent) => {

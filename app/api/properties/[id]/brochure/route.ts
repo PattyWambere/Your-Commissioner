@@ -75,9 +75,13 @@ export async function GET(
     }
 
     // Amenities
-    if (Array.isArray(property.amenities) && property.amenities.length > 0) {
+    const amenities =
+      Array.isArray(property.amenities) && property.amenities.length > 0
+        ? property.amenities.filter((amenity): amenity is string => typeof amenity === 'string')
+        : []
+    if (amenities.length > 0) {
       doc.text('Amenities:', { underline: true })
-      property.amenities.forEach((amenity: string) => {
+      amenities.forEach((amenity) => {
         doc.text(`• ${amenity}`)
       })
       doc.moveDown()

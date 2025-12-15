@@ -89,7 +89,7 @@ const ioHandler = async (req: NextApiRequest, res: NextApiResponse) => {
                 createdAt: true,
               },
             })
-            io.to(propertyId).emit('new_message', message)
+            io.to(conversationId).emit('new_message', message)
             callback({ ok: true })
           } catch (error: any) {
             callback({ error: 'Failed to send message' })
